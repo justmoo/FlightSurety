@@ -1,4 +1,4 @@
-
+import 'babel-polyfill';
 import http from 'http'
 import app from './server'
 

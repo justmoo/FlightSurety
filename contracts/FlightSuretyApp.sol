@@ -11,7 +11,7 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 /************************************************** */
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
-
+   FlightSuretyData dataContract;
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
@@ -25,6 +25,7 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     address private contractOwner;          // Account used to deploy contract
+   
 
     struct Flight {
         bool isRegistered;
@@ -33,7 +34,7 @@ contract FlightSuretyApp {
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
-
+    mapping(bytes32 => address[]) private flightPassengers;
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -72,11 +73,12 @@ contract FlightSuretyApp {
     *
     */
     constructor
-                                (
+                                (address _contractAddress
                                 ) 
                                 public 
     {
         contractOwner = msg.sender;
+         dataContract = FlightSuretyData(_contractAddress);
     }
 
     /********************************************************************************************/
@@ -101,13 +103,12 @@ contract FlightSuretyApp {
     *
     */   
     function registerAirline
-                            (   
+                            ( address airline, string name  
                             )
                             external
-                            pure
-                            returns(bool success, uint256 votes)
+                            
     {
-        return (success, 0);
+        dataContract.registerAirline(airline,name);
     }
 
 
@@ -116,12 +117,18 @@ contract FlightSuretyApp {
     *
     */  
     function registerFlight
-                                (
+                                ( string flight, uint256 Timestamp
                                 )
                                 external
-                                pure
+                                
     {
-
+        bytes32 key = getFlightKey(msg.sender,flight,Timestamp);
+        require(flights[key].isRegistered == true,"already there");
+        flights[key].isRegistered = true;
+        flights[key].statusCode = STATUS_CODE_UNKNOWN;
+        flights[key].updatedTimestamp = Timestamp;
+        flights[key].airline = msg.sender;
+        flightPassengers[key] = new address[](0);
     }
     
    /**
@@ -136,10 +143,34 @@ contract FlightSuretyApp {
                                     uint8 statusCode
                                 )
                                 internal
-                                pure
+                                
     {
-    }
+        bytes32 key = getFlightKey(airline,flight,timestamp);
+        // check if he registered 
+        require(flights[key].isRegistered == true, "there is no flight with that key");
+        if(statusCode == STATUS_CODE_LATE_AIRLINE){
+            address[] _addresses = flightPassengers[key];
+            for (uint i = 0; i< _addresses.length; i++){
+                dataContract.pay(_addresses[i],airline,flight,timestamp);
+            }
 
+        }
+
+        
+    }
+function buy
+                            ( address airline, string flight , uint256 timestamp
+                            )
+                            external
+                            payable
+    {
+            require(msg.value >= 1, "up to 1 ether no mother");
+            require(flights[key].isRegistered, "Flight is not registered");
+           bytes32 key = getFlightKey(airline, flight, timestamp);
+        
+            dataContract.buy.value(msg.value)(key,msg.sender);
+
+    }
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus
@@ -158,7 +189,6 @@ contract FlightSuretyApp {
                                                 requester: msg.sender,
                                                 isOpen: true
                                             });
-
         emit OracleRequest(index, airline, flight, timestamp);
     } 
 
@@ -266,9 +296,8 @@ contract FlightSuretyApp {
         // oracles respond with the *** same *** information
         emit OracleReport(airline, flight, timestamp, statusCode);
         if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
-
+                oracleResponses[key].isOpen == false;
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
-
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);
         }
@@ -334,4 +363,19 @@ contract FlightSuretyApp {
 
 // endregion
 
+
 }   
+
+// data contract 
+ contract FlightSuretyData{
+
+      function registerAirline(address airline,string name) external;
+      function voteToAirline (address airline) external;
+      function buy(bytes32 flight, address _address) external payable;
+      function creditInsurees(address passenger,address airline, string flight,uint256 timestamp) external;
+      function pay(address passenger,address airline, string flight,uint256 timestamp) external;
+      function fundAirline() external payable;
+      function withdraw(address _address,address airline,string flight,uint256 timestamp) external payable;
+      function fund() public payable;
+     
+}

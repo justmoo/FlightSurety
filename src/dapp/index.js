@@ -3,7 +3,7 @@ import DOM from './dom';
 import Contract from './contract';
 import './flightsurety.css';
 
-
+let boughtFlights= [];
 (async() => {
 
     let result = null;
@@ -19,14 +19,43 @@ import './flightsurety.css';
 
         // User-submitted transaction
         DOM.elid('submit-oracle').addEventListener('click', () => {
-            let flight = DOM.elid('flight-number').value;
+            let flight = DOM.elid('bought-flight').name;
+
+            for(let i = 0 ; i< boughtFlights.length;i++){
+                if(flight == boughtFlights[i].name){
+                   let value = boughtFlights[i];
+                    return value;
+                }
+            }
             // Write transaction
-            contract.fetchFlightStatus(flight, (error, result) => {
+            contract.fetchFlightStatus(value, (error, result) => {
                 display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
             });
         })
-    
+        
+        // buy insurance    
+        DOM.elid('buy-insurance').addEventListener('click', () => {
+            let flight = contract.flights[DOM.elid('index').value];
+            //alert(flight.name);
+            contract.buy(flight, (error, result) => {
+                display('Buy insurance','', [{label: 'Operation',error,value:'successful'}]);
+                if(error){alert(error)};
+                if (!error) {
+                    boughtFlights.push(result);
+                    let option = document.createElement('option');
+                    option.innerHTML = result.name;
+                    DOM.elid('bought-flight').appendChild(option);
+                }
+            });
+        });
+
+        contract.trackFlight((error, result) => {
+            display('Flight Status Update', '', [{
+                label: result ? result.flight :'',error: error,value: result ? flightStatus[result.status] : ''}]);
+        });
+
     });
+
     
 
 })();

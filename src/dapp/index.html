@@ -10,6 +10,8 @@
 </head>
 
 <body>
+<!-- this project is so annoying --> 
+
 
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
         <a class="navbar-brand" href="#">FlightSurety</a>
@@ -19,14 +21,26 @@
         </button>
     </nav>
 
-    <main class="container">
+    <main class="container">    
+            <div id="display-wrapper" class="top-20">
+                </div>
+            <div class="row top-20">
+                    <label class="form">Flight</label>
+                    <select id="index" style="min-width: 100px">
+                            <option value = 0 >Flight A</option>
+                            <option value = 1 >Flight B</option>
+                            <option value = 2 >Flight C</option> 
+                    </select>
+                    <btn class="btn btn-primary" id="buy-insurance">Buy Insurance</btn>
+                </div>
 
-        <div id="display-wrapper" class="top-20">
-        </div>
+        
         <div class="row top-20">
-            <label class="form">Flight</label> <select id="flight-number"> <option>Flight A</option> <option>Flight B</option> <option>Flight C</option> 
-         </select>
+            <label class="form">Flight</label>
+            <select id="bought-flight" style="min-width: 100px">
+                </select>
                 <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn> 
+            
         </div>
        
         

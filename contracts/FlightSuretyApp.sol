@@ -35,6 +35,7 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
     mapping(bytes32 => address[]) private flightPassengers;
+    mapping (address => address[]) votes; // to see how many votes an airline got
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -63,6 +64,15 @@ contract FlightSuretyApp {
         require(msg.sender == contractOwner, "Caller is not contract owner");
         _;
     }
+    modifier requireFunndedAndRegistered(address _address)
+    {
+        bool bool1 = dataContract.isAirline(_address);
+        bool bool2 = dataContract.isFunded(_address);
+        require(bool1 == true,"must be registered");
+        require(bool2 == true,"must be funded");
+        _;
+    }
+
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -92,6 +102,16 @@ contract FlightSuretyApp {
     {
         return true;  // Modify to call data contract's status
     }
+     // for the registering
+    function getAirlineCount() external returns(uint256 ){
+        return dataContract.getAirlineCount();
+    }
+     function isAirline (address _address) external view returns (bool){
+      return dataContract.isAirline(_address);
+    }
+    function isFunded (address _address) external view returns(bool){
+       return dataContract.isFunded(_address);
+    }   
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
@@ -108,9 +128,32 @@ contract FlightSuretyApp {
                             external
                             
     {
-        dataContract.registerAirline(airline,name);
-    }
+       // require(dataContract.isAirline(msg.sender) == true,"must be registered");
+       // require(dataContract.isFunded(msg.sender) == true,"must be funded");
+        uint256 result = 3 ;//dataContract.getAirlineCount();
+        if(result <= 4){
+            dataContract.registerAirline(airline,name);
+            }else{
+            //if there is more than 4 airlines you have to get consensus
+            //checks if the sender voted before
+            bool duplicate = false;
+            address[]  _addresses = votes[airline];
+            if(_addresses.length < 0 ){
+            for(uint i = 0 ; i < _addresses.length ; i++){
+                 if(_addresses[i] == msg.sender){
+                    duplicate = true;
+                break;
+                }
+                }
+        require(duplicate == false,"you voted before");
+          if (duplicate == false)  {
+            votes[airline].push(msg.sender);
+             }
 
+        }
+            
+        }
+    }
 
    /**
     * @dev Register a future flight for insuring.
@@ -158,19 +201,45 @@ contract FlightSuretyApp {
 
         
     }
+    function voteToAirline (address _address, string name) external requireFunndedAndRegistered(msg.sender)
+{
+    bool duplicate = false;
+    
+    //check if there is a duplicate, or if he did vote before
+     address[]  _addresses = votes[_address];
+      for(uint i = 0 ; i < _addresses.length ; i++){
+          if(_addresses[i] == msg.sender){
+              duplicate = true;
+              break;
+          }
+      }
+    // vote
+    if(duplicate == false){
+    votes[_address].push(msg.sender);
+
+    }
+    //check the votes and if its more than airlinesCount/2 then approve it
+        uint256 result = dataContract.getAirlineCount();
+        if(votes[_address].length > result/2 && duplicate == false)
+        {
+            dataContract.registerAirline(_address,name);
+        }
+}
 function buy
                             ( address airline, string flight , uint256 timestamp
                             )
                             external
                             payable
     {
-            require(msg.value >= 1, "up to 1 ether no mother");
+            require(msg.value <= 1, "up to 1 ether no more");
             require(flights[key].isRegistered, "Flight is not registered");
            bytes32 key = getFlightKey(airline, flight, timestamp);
         
             dataContract.buy.value(msg.value)(key,msg.sender);
 
     }
+
+   
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus
@@ -370,12 +439,13 @@ function buy
  contract FlightSuretyData{
 
       function registerAirline(address airline,string name) external;
-      function voteToAirline (address airline) external;
       function buy(bytes32 flight, address _address) external payable;
       function creditInsurees(address passenger,address airline, string flight,uint256 timestamp) external;
       function pay(address passenger,address airline, string flight,uint256 timestamp) external;
       function fundAirline() external payable;
       function withdraw(address _address,address airline,string flight,uint256 timestamp) external payable;
       function fund() public payable;
-     
+      function getAirlineCount() external returns (uint256);
+      function isAirline (address _address) external view returns (bool);
+      function isFunded (address _address) external view returns (bool);
 }

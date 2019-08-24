@@ -36,7 +36,7 @@ let boughtFlights= [];
         // buy insurance    
         DOM.elid('buy-insurance').addEventListener('click', () => {
             let flight = contract.flights[DOM.elid('index').value];
-            //alert(flight.name);
+            alert(flight.name);
             contract.buy(flight, (error, result) => {
                 display('Buy insurance','', [{label: 'Operation',error,value:'successful'}]);
                 if(error){alert(error)};
@@ -47,11 +47,6 @@ let boughtFlights= [];
                     DOM.elid('bought-flight').appendChild(option);
                 }
             });
-        });
-
-        contract.trackFlight((error, result) => {
-            display('Flight Status Update', '', [{
-                label: result ? result.flight :'',error: error,value: result ? flightStatus[result.status] : ''}]);
         });
 
     });

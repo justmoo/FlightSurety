@@ -113,6 +113,9 @@ contract FlightSuretyData {
                    result = true;
         }
         return result;
+    }   
+    function getAirlineCount() external returns(uint256 ){
+        return airlinesCount;
     }
 
     /**
@@ -146,61 +149,11 @@ contract FlightSuretyData {
                             
     {
         Airline memory _airline = Airline({name:_name,isRegistered:false,isFunded:false,balance:0});
-         require(airlines[msg.sender].isRegistered == true,"the airline registrar must be registered");
-         require(airlines[msg.sender].isFunded == true, "fund the airline account with 10 ether");
-        if(airlinesCount <= 4) {
         airlines[_address] = _airline;
         airlines[_address].isRegistered = true;
         airlinesCount++;
-        }else{
-            //if there is more than 4 airlines you have to get consensus
-            //checks if the sender voted before
-             bool duplicate = false;
-            address[]  _addresses = votes[_address];
-            if(_addresses.length < 0 ){
-            for(uint i = 0 ; i < _addresses.length ; i++){
-                 if(_addresses[i] == msg.sender){
-                    duplicate = true;
-                break;
-                }
-                }
-        require(duplicate == false,"you voted before");
-          if (duplicate == false)  {
-            votes[_address].push(msg.sender);
-            airlines[_address] = _airline;
-    
-       }
-         
-      }
-            
-     }
     }
 
-function voteToAirline (address _address) external
-{
-    bool duplicate = false;
-    require(airlines[_address].isRegistered == false, "already registered");
-    require(airlines[msg.sender].isRegistered == true, "you have to be registered");
-    require(airlines[msg.sender].isFunded == true, "fund the airline account with 10 ether");
-    //check if there is a duplicate, or if he did vote before
-     address[]  _addresses = votes[_address];
-      for(uint i = 0 ; i < _addresses.length ; i++){
-          if(_addresses[i] == msg.sender){
-              duplicate = true;
-              break;
-          }
-      }
-    // vote
-    if(duplicate == false){
-    votes[_address].push(msg.sender);
-    voted[msg.sender].push(_address);
-    }
-    //check the votes and if its more than airlinesCount/2 then approve it
-        if(votes[_address].length > airlinesCount/2 && duplicate == false)
-        {
-        airlines[_address].isRegistered = true;
-        }
-}
    /**
     * @dev Buy insurance for a flight
     *
@@ -211,7 +164,6 @@ function voteToAirline (address _address) external
                             external
                             payable
     {
-            require(msg.value >= 1, "up to 1 ether no mother");
             passengers[_address][flight] = passengersPurchase({balance: 0, insuranceCredit: msg.value});
     }
 
